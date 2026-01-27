@@ -26,7 +26,6 @@
         <table class="min-w-[900px] divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Reg No</th>
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Name</th>
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Age</th>
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Role</th>
@@ -41,7 +40,6 @@
 
           <tbody class="divide-y divide-gray-100">
             <tr v-for="employee in employees" :key="employee.id" class="hover:bg-gray-50">
-              <td class="px-4 py-3 text-sm">{{ employee.id }}</td>
               <td class="px-4 py-3 text-sm font-medium">{{ employee.name }}</td>
               <td class="px-4 py-3 text-sm">{{ employee.age }}</td>
 
