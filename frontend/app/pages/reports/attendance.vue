@@ -8,6 +8,7 @@ const rows = ref<
 onMounted(async () => {
   const records = await $pb.collection('attendance').getFullList({
     expand: 'employee',
+    filter: 'employee.role="worker"',
   })
 
   const map: Record<string, any> = {}

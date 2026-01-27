@@ -33,7 +33,7 @@ export const useAttendanceStore = defineStore('attendance', {
 
       try {
         const employees = await $pb.collection('employees').getFullList({
-          filter: 'active = true',
+          filter: 'active = true && role = "worker"',
           sort: 'id',
         });
 

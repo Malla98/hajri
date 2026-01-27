@@ -89,7 +89,7 @@ const fetchStats = async () => {
   try {
     // Total employees
     const employees = await $pb.collection('employees').getFullList({
-      filter: 'active = true'
+      filter: 'active = true && role = "worker"',
     });
 
     
