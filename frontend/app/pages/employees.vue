@@ -213,6 +213,7 @@ const fetchEmployees = async () => {
   isLoading.value = true;
   try {
     const records = await $pb.collection('employees').getFullList({
+      filter: 'role = "worker"',
       sort: 'id'
     });
     employees.value = records;
