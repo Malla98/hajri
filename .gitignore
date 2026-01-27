@@ -1,5 +1,5 @@
 # Frontend build & deps
-frontend/.next/
+frontend/.nuxt/
 frontend/.output/
 frontend/node_modules/
 
