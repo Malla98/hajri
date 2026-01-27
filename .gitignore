@@ -1,0 +1,14 @@
+# Frontend build & deps
+frontend/.next/
+frontend/.output/
+frontend/node_modules/
+
+# Go / vendor
+vendor/
+
+# PocketBase public
+pb_public/
+
+# OS / editor junk (recommended)
+.DS_Store
+Thumbs.db
