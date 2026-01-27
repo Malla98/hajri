@@ -1,13 +1,15 @@
 # Frontend build & deps
 frontend/.nuxt/
 frontend/.output/
+frontend/.env
 frontend/node_modules/
 
 # Go / vendor
 vendor/
 
-# PocketBase public
+# PocketBase 
 pb_public/
+pb_data/
 
 # OS / editor junk (recommended)
 .DS_Store

@@ -14,7 +14,7 @@ if (loading) return
   loading = true
 
   try {
-    const employees = await $pb.collection('employees').getFullList({ filter: 'active=true' })
+    const employees = await $pb.collection('employees').getFullList({ filter: 'active=true && role="worker"' })
 
 
 const start = `${month.value}-01`
