@@ -67,7 +67,6 @@ const form = reactive({
 
 const isLoading = ref(false);
 const error = ref('');
-console.log('Login page');
 
 const handleLogin = async () => {
   isLoading.value = true;
