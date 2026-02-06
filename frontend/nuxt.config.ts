@@ -25,6 +25,14 @@ export default defineNuxtConfig({
    app: {
     baseURL: '/',
     buildAssetsDir: '/_nuxt/',
+    head: {
+      link: [
+        { rel: 'manifest', href: '/manifest.json' },
+        { rel: 'icon', type: 'image/png', href: '/favicon.png' },
+        { rel: 'icon', type: 'image/png', sizes: '48x48', href: '/icons/icon-48x48.png' },
+        { rel: 'icon', type: 'image/png', sizes: '72x72', href: '/icons/icon-72x72.png' },
+      ]
+    }
   },
   runtimeConfig: {
     public: {
