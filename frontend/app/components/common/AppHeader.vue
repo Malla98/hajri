@@ -67,7 +67,7 @@
   <!-- Mobile Drawer -->
   <v-navigation-drawer
     v-model="drawer"
-    location="right"
+    location="left"
     temporary
     width="280"
   >
