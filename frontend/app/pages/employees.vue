@@ -1,197 +1,224 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-1">
-    <div class="mb-6">
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 class="text-xl sm:text-2xl font-bold text-gray-900">
+  <v-container fluid class="py-2">
+    <!-- Header -->
+    <v-row class="mb-4" align="center">
+      <v-col cols="12" sm="6">
+        <h1 class="text-h5 text-sm-h4 font-weight-bold">
           Employees
         </h1>
+      </v-col>
 
-        <button @click="showAddModal = true"
-          class="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-          <span class="text-lg leading-none">+</span>
-          <span>Add Employee</span>
-        </button>
-      </div>
-    </div>
-
+      <v-col cols="12" sm="6" class="d-flex justify-sm-end">
+        <v-btn
+          color="primary"
+          prepend-icon="mdi-plus"
+          @click="showAddModal = true"
+        >
+          Add Employee
+        </v-btn>
+      </v-col>
+    </v-row>
 
     <!-- Loading -->
-    <div v-if="isLoading" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    <div v-if="isLoading" class="d-flex justify-center py-12">
+      <v-progress-circular
+        indeterminate
+        size="48"
+        width="4"
+        color="primary"
+      />
     </div>
 
-    <!-- Employees Table -->
-    <div v-else class="rounded-xl bg-white shadow-sm">
-      <div class="relative w-full overflow-x-auto">
-        <table class="min-w-[900px] divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Name</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Age</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Role</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Mobile</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Address</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Salary</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Status</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Actions</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Report</th>
-            </tr>
-          </thead>
+    <!-- Table -->
+    <v-card v-else elevation="1" rounded="xl">
+      <v-data-table
+        :items="employees"
+        item-key="id"
+        class="elevation-0"
+      >
+        <template #headers>
+          <tr>
+            <th>Name</th>
+            <th>Age</th>
+            <th>Role</th>
+            <th>Mobile</th>
+            <th>Address</th>
+            <th>Salary</th>
+            <th>Status</th>
+            <th>Actions</th>
+            <th>Report</th>
+          </tr>
+        </template>
 
-          <tbody class="divide-y divide-gray-100">
-            <tr v-for="employee in employees" :key="employee.id" class="hover:bg-gray-50">
-              <td class="px-4 py-3 text-sm font-medium">{{ employee.name }}</td>
-              <td class="px-4 py-3 text-sm">{{ employee.age }}</td>
+        <template #item="{ item }">
+          <tr>
+            <td class="font-weight-medium">{{ item.name }}</td>
+            <td>{{ item.age }}</td>
 
-              <td class="px-4 py-3">
-                <span :class="[
-                  'rounded-full px-2.5 py-0.5 text-xs font-medium',
-                  employee.role === 'admin'
-                    ? 'bg-purple-100 text-purple-800'
-                    : 'bg-blue-100 text-blue-800'
-                ]">
-                  {{ employee.role }}
-                </span>
-              </td>
-              <td class="px-4 py-3 text-sm whitespace-nowrap">
-                {{ employee.mobile }}
-              </td>
-              <td class="px-4 py-3 text-sm whitespace-nowrap">
-                {{ employee.address }}
-              </td>
+            <td>
+              <v-chip
+                size="small"
+                :color="item.role === 'admin' ? 'purple' : 'primary'"
+                variant="tonal"
+              >
+                {{ item.role }}
+              </v-chip>
+            </td>
 
-              <td class="px-4 py-3 text-sm whitespace-nowrap">
-                ₹{{ employee.salary }}
-              </td>
+            <td>{{ item.mobile }}</td>
+            <td>{{ item.address }}</td>
+            <td>₹{{ item.salary }}</td>
 
-              <td class="px-4 py-3">
-                <span :class="[
-                  'rounded-full px-2.5 py-0.5 text-xs font-medium',
-                  employee.active
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800'
-                ]">
-                  {{ employee.active ? 'Active' : 'Inactive' }}
-                </span>
-              </td>
+            <td>
+              <v-chip
+                size="small"
+                :color="item.active ? 'success' : 'error'"
+                variant="tonal"
+              >
+                {{ item.active ? 'Active' : 'Inactive' }}
+              </v-chip>
+            </td>
 
-              <td class="px-4 py-3 text-sm whitespace-nowrap">
-                <div class="flex gap-3">
-                  <button @click="editEmployee(employee)" class="font-medium text-blue-600 hover:underline">
-                    Edit
-                  </button>
+            <td>
+              <v-btn
+                variant="text"
+                color="primary"
+                size="small"
+                @click="editEmployee(item)"
+              >
+                Edit
+              </v-btn>
 
-                  <button v-if="employee.role !== 'admin'" @click="toggleEmployeeStatus(employee)"
-                    class="font-medium text-red-600 hover:underline">
-                    {{ employee.active ? 'Deactivate' : 'Activate' }}
-                  </button>
-                </div>
-              </td>
-              <td class="px-4 py-3 text-sm whitespace-nowrap">
-                <button @click="goToReport(employee.id)" class="font-medium text-blue-600 hover:underline">
-                  View Report
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+              <v-btn
+                v-if="item.role !== 'admin'"
+                variant="text"
+                color="error"
+                size="small"
+                @click="toggleEmployeeStatus(item)"
+              >
+                {{ item.active ? 'Deactivate' : 'Activate' }}
+              </v-btn>
+            </td>
 
+            <td>
+              <v-btn
+                variant="text"
+                color="primary"
+                size="small"
+                @click="goToReport(item.id)"
+              >
+                View Report
+              </v-btn>
+            </td>
+          </tr>
+        </template>
+      </v-data-table>
+    </v-card>
 
+    <!-- Add / Edit Dialog -->
+    <v-dialog
+      v-model="dialogVisible"
+      max-width="500"
+      persistent
+    >
+      <v-card rounded="xl">
+        <v-card-title class="text-h6 font-weight-bold">
+          {{ editingEmployee ? 'Edit Employee' : 'Add Employee' }}
+        </v-card-title>
 
-    <!-- Add/Edit Modal -->
-    <div v-if="showAddModal || editingEmployee"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div class="bg-white rounded-xl shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div class="p-6">
-          <h2 class="text-xl font-bold text-gray-900 mb-4">
-            {{ editingEmployee ? 'Edit Employee' : 'Add Employee' }}
-          </h2>
+        <v-card-text>
+          <v-form @submit.prevent="saveEmployee">
+            <v-text-field
+              v-model="form.name"
+              label="Name"
+              required
+            />
 
-          <form @submit.prevent="saveEmployee" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-              <input v-model="form.name" type="text" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-            </div>
+            <v-row>
+              <v-col cols="6">
+                <v-text-field
+                  v-model.number="form.age"
+                  label="Age"
+                  type="number"
+                  min="18"
+                  max="70"
+                  required
+                />
+              </v-col>
 
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Age *</label>
-                <input v-model.number="form.age" type="number" required min="18" max="70"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-              </div>
+              <v-col cols="6">
+                <v-text-field
+                  v-model.number="form.salary"
+                  label="Salary (₹)"
+                  type="number"
+                  min="0"
+                  required
+                />
+              </v-col>
+            </v-row>
 
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Salary (₹) *</label>
-                <input v-model.number="form.salary" type="number" required min="0"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-              </div>
-            </div>
-            
+            <v-text-field
+              v-model="form.mobile"
+              label="Mobile"
+            />
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Mobile </label>
-              <input v-model="form.mobile" type="text" 
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-            </div>
+            <v-text-field
+              v-model="form.address"
+              label="Address"
+            />
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Address </label>
-              <input v-model="form.address" type="text" 
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-            </div>
+            <v-select
+              v-model="form.role"
+              label="Role"
+              :items="['worker', 'admin']"
+              required
+            />
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Role *</label>
-              <select v-model="form.role" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-               >
-                <option value="worker">Worker</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
+            <v-checkbox
+              v-model="form.active"
+              label="Active"
+            />
+          </v-form>
+        </v-card-text>
 
-            <div class="flex items-center">
-              <input v-model="form.active" type="checkbox" id="active"
-                class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
-              <label for="active" class="ml-2 block text-sm text-gray-700">
-                Active
-              </label>
-            </div>
+        <v-card-actions class="justify-end">
+          <v-btn variant="text" @click="closeModal">
+            Cancel
+          </v-btn>
 
-            <div class="flex justify-end gap-3 pt-4">
-              <button type="button" @click="closeModal"
-                class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
-                Cancel
-              </button>
-              <button type="submit" :disabled="isSaving"
-                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
-                <span v-if="isSaving" class="animate-spin mr-2">⟳</span>
-                {{ editingEmployee ? 'Update' : 'Create' }}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
+          <v-btn
+            color="primary"
+            :loading="isSaving"
+            @click="saveEmployee"
+          >
+            {{ editingEmployee ? 'Update' : 'Create' }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </v-container>
 </template>
 
 <script setup lang="ts">
-import type { RecordModel } from 'pocketbase';
-import { useAuthStore } from '~/stores/auth';
+import type { RecordModel } from 'pocketbase'
+import { useAuthStore } from '~/stores/auth'
 
+const { $pb } = useNuxtApp()
+const authStore = useAuthStore()
+const router = useRouter()
 
-const { $pb } = useNuxtApp();
-const authStore = useAuthStore();
-const router = useRouter();
-const employees = ref<RecordModel[]>([]);
-const isLoading = ref(false);
-const isSaving = ref(false);
-const showAddModal = ref(false);
-const editingEmployee = ref<RecordModel | null>(null);
+const employees = ref<RecordModel[]>([])
+const isLoading = ref(false)
+const isSaving = ref(false)
+const showAddModal = ref(false)
+const editingEmployee = ref<RecordModel | null>(null)
+
+const dialogVisible = computed({
+  get: () => showAddModal.value || !!editingEmployee.value,
+  set: (val) => {
+    if (!val) closeModal()
+  },
+})
 
 const form = reactive({
   name: '',
@@ -199,110 +226,68 @@ const form = reactive({
   role: 'worker',
   salary: 0,
   active: true,
-  mobile:'',
-  address:'',
-});
+  mobile: '',
+  address: '',
+})
 
-onMounted(async () => {
-  await fetchEmployees();
-});
+onMounted(fetchEmployees)
+
 const goToReport = (id: string) => {
-  router.push(`/reports/employee/${id}`);
-};
-const fetchEmployees = async () => {
-  isLoading.value = true;
+  router.push(`/reports/employee/${id}`)
+}
+
+async function fetchEmployees() {
+  isLoading.value = true
   try {
-    const records = await $pb.collection('employees').getFullList({
+    employees.value = await $pb.collection('employees').getFullList({
       filter: 'role = "worker"',
-      sort: 'id'
-    });
-    employees.value = records;
-  } catch (error) {
-    console.error('Error fetching employees:', error);
+      sort: 'id',
+    })
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-};
+}
 
-const editEmployee = (employee: RecordModel) => {
-  editingEmployee.value = employee;
-  Object.assign(form, {
-    name: employee.name,
-    age: employee.age,
-    role: employee.role,
-    salary: employee.salary,
-    active: employee.active,
-    mobile: employee.mobile,
-    address: employee.address
-  });
-};
+function editEmployee(employee: RecordModel) {
+  editingEmployee.value = employee
+  Object.assign(form, employee)
+}
 
-const toggleEmployeeStatus = async (employee: RecordModel) => {
-  if (!confirm(`Are you sure you want to ${employee.active ? 'deactivate' : 'activate'} ${employee.name}?`)) {
-    return;
-  }
+async function toggleEmployeeStatus(employee: RecordModel) {
+  if (!confirm(`Are you sure you want to ${employee.active ? 'deactivate' : 'activate'} ${employee.name}?`)) return
+  await $pb.collection('employees').update(employee.id, {
+    active: !employee.active,
+  })
+  fetchEmployees()
+}
 
+async function saveEmployee() {
+  if (!authStore.isAdmin) return
+  isSaving.value = true
   try {
-    await $pb.collection('employees').update(employee.id, {
-      active: !employee.active
-    });
-    await fetchEmployees();
-  } catch (error) {
-    console.error('Error toggling employee status:', error);
-    alert('Failed to update employee status');
-  }
-};
-
-const saveEmployee = async () => {
-  if (!authStore.isAdmin) return;
-
-  isSaving.value = true;
-
-  try {
-    const data = {
-      name: form.name,
-      age: form.age,
-      role: form.role,
-      salary: form.salary,
-      active: form.active,
-      mobile: form.mobile,
-      address: form.address,
-    };
-
-
     if (editingEmployee.value) {
-      await $pb.collection('employees').update(editingEmployee.value.id, data);
+      await $pb.collection('employees').update(editingEmployee.value.id, form)
     } else {
-      await $pb.collection('employees').create(data);
+      await $pb.collection('employees').create(form)
     }
-
-    closeModal();
-    await fetchEmployees();
-
-  } catch (error) {
-    console.error('Error saving employee:', error);
-    alert('Failed to save employee');
+    closeModal()
+    fetchEmployees()
   } finally {
-    isSaving.value = false;
+    isSaving.value = false
   }
-};
+}
 
-const closeModal = () => {
-  showAddModal.value = false;
-  editingEmployee.value = null;
-  resetForm();
-};
-
-const resetForm = () => {
+function closeModal() {
+  showAddModal.value = false
+  editingEmployee.value = null
   Object.assign(form, {
     name: '',
     age: 18,
     role: 'worker',
     salary: 0,
     active: true,
-    mobile:'',
-    address:'',
-  });
-};
-
+    mobile: '',
+    address: '',
+  })
+}
 </script>

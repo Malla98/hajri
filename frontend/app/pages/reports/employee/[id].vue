@@ -2,47 +2,51 @@
 import dayjs from 'dayjs'
 
 const route = useRoute()
-const {$pb} = useNuxtApp()
+const { $pb } = useNuxtApp()
 const { calculate } = useAttendanceCalc()
 
 const month = ref(dayjs().format('YYYY-MM'))
-let loading = false
+const loading = ref(false)
+
 const employee = ref<any>(null)
 const attendance = ref<any[]>([])
 const summary = ref<any>(null)
 
+const headers = [
+  { title: 'Date', key: 'date' },
+  { title: 'Status', key: 'status', align: 'center' },
+  { title: 'Advance', key: 'advance_amount', align: 'end' },
+  { title: 'Remark', key: 'remark' },
+]
+
 const loadReport = async () => {
-if (loading) return
-  loading = true
+  if (loading.value) return
+  loading.value = true
 
-    try {
-     const empId = route.params.id as string
-  if (!empId) return
+  try {
+    const empId = route.params.id as string
+    if (!empId) return
 
-  employee.value = await $pb.collection('employees').getOne(empId)
+    employee.value = await $pb.collection('employees').getOne(empId)
 
-  const start = `${month.value}-01`
-  const end = dayjs(start).endOf('month').format('YYYY-MM-DD')
+    const start = `${month.value}-01`
+    const end = dayjs(start).endOf('month').format('YYYY-MM-DD')
 
-  attendance.value = await $pb.collection('attendance').getFullList({
-    filter: `employee="${empId}" && date >= "${start}" && date <= "${end}"`,
-    sort: 'date',
-  })
+    attendance.value = await $pb.collection('attendance').getFullList({
+      filter: `employee="${empId}" && date >= "${start}" && date <= "${end}"`,
+      sort: 'date',
+    })
 
-  summary.value = calculate({
-    salary: employee.value.salary,
-    attendance: attendance.value,
-    totalDays: dayjs(end).date(),
-  })
+    summary.value = calculate({
+      salary: employee.value.salary,
+      attendance: attendance.value,
+      totalDays: dayjs(end).date(),
+    })
   } finally {
-    loading = false
+    loading.value = false
   }
- 
 }
 
-/**
- * 🔥 Explicit reactivity
- */
 watch(
   () => [month.value, route.params.id],
   loadReport,
@@ -51,97 +55,115 @@ watch(
 </script>
 
 <template>
-  <div class="p-6 space-y-6">
+  <v-container fluid class="pa-6">
     <!-- Header -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-      <div>
-        <h1 class="text-2xl font-semibold">
+    <v-row align="center" justify="space-between" class="mb-4">
+      <v-col cols="12" md="6">
+        <h1 class="text-h5 font-weight-bold">
           {{ employee?.name }}
         </h1>
-        <p class="text-sm text-gray-500">
+        <p class="text-caption text-medium-emphasis">
           Monthly Report
         </p>
-      </div>
+      </v-col>
 
-      <input
-        type="month"
-        v-model="month"
-        class="border rounded-lg px-3 py-2"
-      />
-    </div>
+      <v-col cols="12" md="3">
+        <v-text-field
+          v-model="month"
+          type="month"
+          label="Month"
+          density="comfortable"
+          variant="outlined"
+        />
+      </v-col>
+    </v-row>
 
-    <!-- Summary Cards -->
-    <div v-if="summary" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="bg-white border rounded-xl p-4">
-        <p class="text-sm text-gray-500">Present Days</p>
-        <p class="text-2xl font-bold">{{ summary.presentDays }}</p>
-      </div>
+    <!-- Summary -->
+    <v-row v-if="summary" class="mb-6" dense>
+      <v-col cols="12" md="3">
+        <v-card rounded="xl" elevation="2">
+          <v-card-text>
+            <div class="text-caption text-medium-emphasis">Present Days</div>
+            <div class="text-h5 font-weight-bold">
+              {{ summary.presentDays }}
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div class="bg-white border rounded-xl p-4">
-        <p class="text-sm text-gray-500">Absent Days</p>
-        <p class="text-2xl font-bold">{{ summary.absentDays }}</p>
-      </div>
+      <v-col cols="12" md="3">
+        <v-card rounded="xl" elevation="2">
+          <v-card-text>
+            <div class="text-caption text-medium-emphasis">Absent Days</div>
+            <div class="text-h5 font-weight-bold">
+              {{ summary.absentDays }}
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div class="bg-white border rounded-xl p-4">
-        <p class="text-sm text-gray-500">Advance</p>
-        <p class="text-2xl font-bold text-red-600">
-          ₹{{ summary.advance }}
-        </p>
-      </div>
+      <v-col cols="12" md="3">
+        <v-card rounded="xl" elevation="2">
+          <v-card-text>
+            <div class="text-caption text-medium-emphasis">Advance</div>
+            <div class="text-h5 font-weight-bold text-error">
+              ₹{{ summary.advance }}
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div class="bg-white border rounded-xl p-4">
-        <p class="text-sm text-gray-500">Net Pay</p>
-        <p class="text-2xl font-bold text-green-600">
-          ₹{{ summary.net.toFixed(2) }}
-        </p>
-      </div>
-    </div>
+      <v-col cols="12" md="3">
+        <v-card rounded="xl" elevation="2">
+          <v-card-text>
+            <div class="text-caption text-medium-emphasis">Net Pay</div>
+            <div class="text-h5 font-weight-bold text-success">
+              ₹{{ summary.net.toFixed(2) }}
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
 
     <!-- Attendance Table -->
-    <div class="overflow-x-auto border rounded-xl">
-      <table class="min-w-full text-sm">
-        <thead class="bg-gray-100">
-          <tr>
-            <th class="px-4 py-3 text-left">Date</th>
-            <th class="px-4 py-3 text-center">Status</th>
-            <th class="px-4 py-3 text-right">Advance</th>
-            <th class="px-4 py-3 text-left">Remark</th>
-          </tr>
-        </thead>
+    <v-card rounded="xl" elevation="2">
+      <v-data-table
+        :headers="headers"
+        :items="attendance"
+        :loading="loading"
+        item-key="id"
+        class="elevation-0"
+      >
+        <template #item.date="{ item }">
+          {{ dayjs(item.date).format('DD MMM YYYY') }}
+        </template>
 
-        <tbody>
-          <tr
-            v-for="a in attendance"
-            :key="a.id"
-            class="border-t"
+        <template #item.status="{ item }">
+          <v-chip
+            :color="item.status === 'present' ? 'success' : 'error'"
+            variant="tonal"
+            size="small"
           >
-            <td class="px-4 py-3">
-              {{ dayjs(a.date).format('DD MMM YYYY') }}
-            </td>
-            <td
-              class="px-4 py-3 text-center font-medium"
-              :class="
-                a.status === 'present'
-                  ? 'text-green-600'
-                  : 'text-red-600'
-              "
-            >
-              {{ a.status }}
-            </td>
-            <td class="px-4 py-3 text-right">
-              ₹{{ a.advance_amount || 0 }}
-            </td>
-            <td class="px-4 py-3">
-              {{ a.remark || '-' }}
-            </td>
-          </tr>
-          <tr v-if="attendance.length == 0">
-            <td colspan="4" class="px-4 py-6 text-center text-gray-500">
-              No attendance records found.
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+            {{ item.status }}
+          </v-chip>
+        </template>
+
+        <template #item.advance_amount="{ item }">
+          ₹{{ item.advance_amount || 0 }}
+        </template>
+
+        <template #item.remark="{ item }">
+          {{ item.remark || '-' }}
+        </template>
+
+        <template #no-data>
+          <v-empty-state
+            icon="mdi-calendar-remove"
+            title="No attendance data"
+            text="No attendance records found for this month."
+          />
+        </template>
+      </v-data-table>
+    </v-card>
+  </v-container>
 </template>

@@ -1,73 +1,90 @@
 <script setup lang="ts">
-const { $pb } = useNuxtApp();
+const { $pb } = useNuxtApp()
 
 const rows = ref<
   { name: string; present: number; absent: number }[]
 >([])
 
+const loading = ref(false)
+
+const headers = [
+  { title: 'Employee', key: 'name' },
+  { title: 'Present', key: 'present', align: 'center' },
+  { title: 'Absent', key: 'absent', align: 'center' },
+  { title: 'Total', key: 'total', align: 'center' },
+]
+
 onMounted(async () => {
-  const records = await $pb.collection('attendance').getFullList({
-    expand: 'employee',
-    filter: 'employee.role="worker"',
-  })
+  loading.value = true
+  try {
+    const records = await $pb.collection('attendance').getFullList({
+      expand: 'employee',
+      filter: 'employee.role="worker"',
+    })
 
-  const map: Record<string, any> = {}
+    const map: Record<string, any> = {}
 
-  records.forEach((a: any) => {
-    const name = a.expand.employee.name
+    records.forEach((a: any) => {
+      const name = a.expand.employee.name
 
-    if (!map[name]) {
-      map[name] = { name, present: 0, absent: 0 }
-    }
+      if (!map[name]) {
+        map[name] = { name, present: 0, absent: 0 }
+      }
 
-    map[name][a.status]++
-  })
+      map[name][a.status]++
+    })
 
-  rows.value = Object.values(map)
+    rows.value = Object.values(map).map((r: any) => ({
+      ...r,
+      total: r.present + r.absent,
+    }))
+  } finally {
+    loading.value = false
+  }
 })
 </script>
 
 <template>
-  <div class="p-6 space-y-6">
-    <h1 class="text-2xl font-semibold text-gray-800">
+  <v-container fluid class="pa-6">
+    <h1 class="text-h5 font-weight-bold mb-4">
       Attendance Summary
     </h1>
 
-    <div class="overflow-x-auto border rounded-xl">
-      <table class="min-w-full text-sm">
-        <thead class="bg-gray-100 text-gray-600">
-          <tr>
-            <th class="px-4 py-3 text-left">Employee</th>
-            <th class="px-4 py-3 text-center">Present</th>
-            <th class="px-4 py-3 text-center">Absent</th>
-            <th class="px-4 py-3 text-center">Total</th>
-          </tr>
-        </thead>
+    <v-card rounded="xl" elevation="2">
+      <v-data-table
+        :headers="headers"
+        :items="rows"
+        :loading="loading"
+        item-key="name"
+        loading-text="Loading attendance data..."
+        class="elevation-0"
+      >
+        <template #item.present="{ item }">
+          <span class="text-success font-weight-medium">
+            {{ item.present }}
+          </span>
+        </template>
 
-        <tbody>
-          <tr
-            v-for="r in rows"
-            :key="r.name"
-            class="border-t hover:bg-gray-50"
-          >
-            <td class="px-4 py-3 font-medium">{{ r.name }}</td>
-            <td class="px-4 py-3 text-center text-green-600">
-              {{ r.present }}
-            </td>
-            <td class="px-4 py-3 text-center text-red-600">
-              {{ r.absent }}
-            </td>
-            <td class="px-4 py-3 text-center font-semibold">
-              {{ r.present + r.absent }}
-            </td>
-          </tr>
-          <tr v-if="rows.length == 0">
-            <td colspan="4" class="px-4 py-6 text-center text-gray-500">
-              No attendance records found.
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+        <template #item.absent="{ item }">
+          <span class="text-error font-weight-medium">
+            {{ item.absent }}
+          </span>
+        </template>
+
+        <template #item.total="{ item }">
+          <span class="font-weight-bold">
+            {{ item.total }}
+          </span>
+        </template>
+
+        <template #no-data>
+          <v-empty-state
+            icon="mdi-calendar-remove"
+            title="No attendance records"
+            text="No attendance records found."
+          />
+        </template>
+      </v-data-table>
+    </v-card>
+  </v-container>
 </template>

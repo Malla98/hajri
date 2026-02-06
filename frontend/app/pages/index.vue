@@ -1,267 +1,242 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-4">
+  <v-container fluid class="py-4">
     <!-- Header -->
-    <div class="mb-6">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900">Attendance</h1>
-          <p class="text-gray-600">{{ formatDate(selectedDate ?? '') }}</p>
+    <v-row align="center" class="mb-6">
+      <v-col cols="12" md="6">
+        <h1 class="text-h5 font-weight-bold">Attendance</h1>
+        <div class="text-body-2 text-medium-emphasis">
+          {{ formatDate(selectedDate ?? '') }}
         </div>
-        
-        <div class="flex items-center gap-4">
-          <input
-            type="date"
-            v-model="selectedDate"
-            @change="onDateChange"
-            class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            :max="today"
-            @click="openDatePicker"
-          />
-          <button
-            v-if="isAdmin"
-            @click="refreshData"
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            :disabled="isLoading"
-          >
-            Refresh
-          </button>
-        </div>
-      </div>
+      </v-col>
+
+      <v-col cols="12" md="6" class="d-flex justify-md-end ga-3">
+        <v-text-field v-model="selectedDate" type="date" :max="today" density="comfortable" hide-details
+          @update:model-value="onDateChange" />
+
+        <v-btn v-if="isAdmin" color="primary" :loading="isLoading" @click="refreshData">
+          Refresh
+        </v-btn>
+      </v-col>
+    </v-row>
+
+    <!-- Loading -->
+    <div v-if="isLoading" class="d-flex justify-center py-12">
+      <v-progress-circular indeterminate size="48" width="4" color="primary" />
     </div>
-    
-    <!-- Loading State -->
-    <div v-if="isLoading" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-    </div>
-    
-    <!-- Content when not loading -->
+
+    <!-- Content -->
     <template v-else>
-      <!-- Desktop Table View -->
-      <div class="hidden lg:block">
-        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Employee
-                </th>
-                <th v-if="isAdmin" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Updated At
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Advance (₹)
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Remark
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="item in todaysAttendance" :key="item.id">
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="flex items-center">
-                    <div>
-                      <div class="text-sm font-medium text-gray-900">{{ item.name }}</div>
-                    </div>
+      <!-- Desktop Table -->
+      <v-card class="d-none d-lg-block" elevation="1" rounded="xl">
+        <v-data-table :items="todaysAttendance" item-key="id" class="elevation-0">
+          <template #headers>
+            <tr>
+              <th>Employee</th>
+              <th v-if="isAdmin">Updated At</th>
+              <th>Advance (₹)</th>
+              <th>Remark</th>
+              <th>Status</th>
+            </tr>
+          </template>
+
+          <template #item="{ item }">
+            <tr :class="item.status === 'present' ? 'row-present' : 'row-absent'">
+              <td class="font-weight-medium">
+                {{ item.name }}
+              </td>
+
+              <td v-if="isAdmin" class="text-body-2">
+                {{ formatTime(item.updated_at ?? '') }}
+              </td>
+
+              <td>
+                <v-text-field v-if="isAdmin" v-model.number="item.advance_amount" type="number" density="compact"
+                  hide-details min="0" step="100" style="max-width: 120px"
+                  @blur="attendanceStore.saveAttendance(item)" />
+                <span v-else>
+                  ₹{{ item.advance_amount || 0 }}
+                </span>
+              </td>
+
+              <td>
+                <v-text-field v-if="isAdmin" v-model="item.remark" density="compact" hide-details
+                  @blur="attendanceStore.saveAttendance(item)" />
+                <span v-else>
+                  {{ item.remark || '-' }}
+                </span>
+              </td>
+
+              <td>
+                <v-switch v-model="item.status" true-value="present" false-value="absent" :disabled="!isAdmin"
+                  color="success"   base-color="error" density="compact" hide-details 
+                  @update:model-value="attendanceStore.saveAttendance(item)">
+                  <template #label>
+                    <span :class="item.status === 'present'
+                      ? 'text-success'
+                      : 'text-error'" class="text-body-2 font-weight-medium">
+                      {{ item.status === 'present' ? 'Present' : 'Absent' }}
+                    </span>
+                  </template>
+                </v-switch>
+              </td>
+            </tr>
+          </template>
+        </v-data-table>
+      </v-card>
+
+      <!-- Mobile Cards -->
+      <v-row class="d-lg-none" dense>
+        <v-col v-for="item in todaysAttendance" :key="item.id" cols="12">
+          <v-card elevation="1" rounded="xl" :class="item.status === 'present' ? 'row-present' : 'row-absent'">
+            <v-card-title class="d-flex justify-space-between">
+              <span class="font-weight-bold text-primary">{{ item.name }}</span>
+              <v-switch v-model="item.status" true-value="present" false-value="absent" :disabled="!isAdmin"
+                color="success"   base-color="error" density="compact" hide-details 
+                @update:model-value="attendanceStore.saveAttendance(item)" >
+                <template #label>
+                  <v-chip :class="item.status === 'present'
+                    ? 'text-success'
+                    : 'text-error'" class="text-caption font-weight-medium rounded-pill elevation-1">
+                    {{ item.status === 'present' ? 'Present' : 'Absent' }}
+                  </v-chip>
+                </template>
+              </v-switch>
+            </v-card-title>
+
+            <v-card-text>
+              <v-row dense>
+                <v-col cols="3">
+                  <div class="text-caption text-medium-emphasis">
+                    Advance
                   </div>
-                </td>
-                <td v-if="isAdmin" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  Last updated: {{ formatTime(item.updated_at ?? '') }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <input
-                    v-if="isAdmin"
-                    type="number"
-                    v-model.number="item.advance_amount"
-                    @blur="attendanceStore.saveAttendance(item)"
-                    class="w-32 px-3 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="0"
-                    min="0"
-                    step="100"
-                  />
-                  <span v-else class="text-gray-700">
+                  <v-text-field v-if="isAdmin" v-model.number="item.advance_amount" type="number" density="compact" min="0" step="100" style="max-width: 140px"
+                    hide-details @blur="attendanceStore.saveAttendance(item)" />
+                  <div v-else class="font-weight-medium">
                     ₹{{ item.advance_amount || 0 }}
-                  </span>
-                </td>
-                <td class="px-6 py-4">
-                <div v-if="isAdmin">
-                <input
-                  type="text"
-                  v-model="item.remark"
-                  @blur="attendanceStore.saveAttendance(item)"
-                   class="w-32 px-3 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter remark"
-                />
-              </div>
-                  <span  v-else class="text-sm text-gray-700">
+                  </div>
+                </v-col>
+
+                <v-col cols="9">
+                  <div class="text-caption text-medium-emphasis">
+                    Remark
+                  </div>
+                  <v-text-field v-if="isAdmin" v-model="item.remark" density="compact" hide-details
+                    @blur="attendanceStore.saveAttendance(item)" />
+                  <div v-else class="font-weight-medium">
                     {{ item.remark || '-' }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <button
-                    @click="() => {
-                      item.status = item.status === 'present' ? 'absent' : 'present'
-                      attendanceStore.saveAttendance(item)
-                    }"
-                    :disabled="!isAdmin"
-                    :class="[
-                      'px-4 py-2 rounded-lg font-semibold transition-all duration-200 min-w-[100px]',
-                      'disabled:opacity-50 disabled:cursor-not-allowed',
-                      item.status === 'present' 
-                        ? 'bg-green-100 text-green-800 hover:bg-green-200' 
-                        : 'bg-red-100 text-red-800 hover:bg-red-200'
-                    ]"
-                  >
-                    {{ item.status === 'present' ? '✅ Present' : '❌ Absent' }}
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      
-      <!-- Mobile Card View -->
-      <div class="lg:hidden space-y-4">
-        <div 
-          v-for="item in todaysAttendance" 
-          :key="item.id"
-          class="bg-white rounded-xl shadow-sm p-4"
-        >
-          <div class="flex justify-between items-start mb-3">
-            <div>
-              <h3 class="font-semibold text-gray-900">{{ item.name }}</h3>
-            </div>
-            <button
-               @click="() => {
-                  item.status = item.status === 'present' ? 'absent' : 'present'
-                  attendanceStore.saveAttendance(item)
-                }"
-              :disabled="!isAdmin"
-              :class="[
-                'px-4 py-2 rounded-lg font-semibold transition-all duration-200 min-w-[100px]',
-                'disabled:opacity-50 disabled:cursor-not-allowed',
-                item.status === 'present' 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-red-100 text-red-800'
-              ]"
-            >
-              {{ item.status === 'present' ? '✅ Present' : '❌ Absent' }}
-            </button>
-          </div>
-          
-          <div class="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p class="text-gray-500">Advance</p>
-              <div v-if="isAdmin">
-                <input
-                  type="number"
-                   v-model.number="item.advance_amount"
-                  @blur="attendanceStore.saveAttendance(item)"
-                  class="w-full px-3 py-1 border border-gray-300 rounded-md"
-                  placeholder="0"
-                  min="0"
-                />
-              </div>
-              <p v-else class="font-medium">₹{{ item.advance_amount || 0 }}</p>
-            </div>
-            <div>
-              <p class="text-gray-500">Remark</p>
-              <div v-if="isAdmin">
-                <input
-                  type="text"
-                  v-model="item.remark"
-                  @blur="attendanceStore.saveAttendance(item)"
-                  class="w-full px-3 py-1 border border-gray-300 rounded-md"
-                  placeholder="Enter remark"
-                />
-              </div>
-              <p v-else class="font-medium">{{ item.remark || '-' }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      
+                  </div>
+                </v-col>
+              </v-row>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+
       <!-- Summary -->
-      <div v-if="isAdmin" class="mt-8 p-6 bg-white rounded-xl shadow-sm">
-        <h2 class="text-lg font-semibold mb-4">Today's Summary</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div class="text-center p-4 bg-green-50 rounded-lg">
-            <p class="text-2xl font-bold text-green-700">{{ presentCount }}</p>
-            <p class="text-green-600">Present</p>
-          </div>
-          <div class="text-center p-4 bg-red-50 rounded-lg">
-            <p class="text-2xl font-bold text-red-700">{{ absentCount }}</p>
-            <p class="text-red-600">Absent</p>
-          </div>
-          <div class="text-center p-4 bg-blue-50 rounded-lg">
-            <p class="text-2xl font-bold text-blue-700">₹{{ totalAdvances }}</p>
-            <p class="text-blue-600">Total Advances</p>
-          </div>
-        </div>
-      </div>
+      <v-card v-if="isAdmin" class="mt-8" elevation="1" rounded="xl">
+        <v-card-title>
+          Today’s Summary
+        </v-card-title>
+
+        <v-card-text>
+          <v-row>
+            <v-col cols="12" sm="4">
+              <v-sheet class="pa-4 text-center" color="green-lighten-5" rounded>
+                <div class="text-h5 text-success">
+                  {{ presentCount }}
+                </div>
+                <div class="text-body-2">Present</div>
+              </v-sheet>
+            </v-col>
+
+            <v-col cols="12" sm="4">
+              <v-sheet class="pa-4 text-center" color="red-lighten-5" rounded>
+                <div class="text-h5 text-error">
+                  {{ absentCount }}
+                </div>
+                <div class="text-body-2">Absent</div>
+              </v-sheet>
+            </v-col>
+
+            <v-col cols="12" sm="4">
+              <v-sheet class="pa-4 text-center" color="blue-lighten-5" rounded>
+                <div class="text-h5 text-primary">
+                  ₹{{ totalAdvances }}
+                </div>
+                <div class="text-body-2">Total Advances</div>
+              </v-sheet>
+            </v-col>
+          </v-row>
+        </v-card-text>
+      </v-card>
     </template>
-  </div>
+  </v-container>
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia';
-import { useAttendanceStore } from '~/stores/attendance';
-import { useAuthStore } from '~/stores/auth';
+import { storeToRefs } from 'pinia'
+import { computed, onMounted } from 'vue'
+import { useAttendanceStore } from '~/stores/attendance'
+import { useAuthStore } from '~/stores/auth'
 
-const authStore = useAuthStore();
-const attendanceStore = useAttendanceStore();
+const authStore = useAuthStore()
+const attendanceStore = useAttendanceStore()
 
-const { todaysAttendance, selectedDate, isLoading } = storeToRefs(attendanceStore);
-const isAdmin = computed(() => authStore.isAdmin);
+const { todaysAttendance, selectedDate, isLoading } =
+  storeToRefs(attendanceStore)
 
-const today = new Date().toISOString().split('T')[0];
+const isAdmin = computed(() => authStore.isAdmin)
 
-const presentCount = computed(() => 
-  todaysAttendance.value.filter(item => item.status === 'present').length
-);
+const today = new Date().toISOString().split('T')[0]
 
-const absentCount = computed(() => 
-  todaysAttendance.value.filter(item => item.status === 'absent').length
-);
+const presentCount = computed(() =>
+  todaysAttendance.value.filter(i => i.status === 'present').length
+)
 
-const totalAdvances = computed(() => 
-  todaysAttendance.value.reduce((sum, item) => sum + (item.advance_amount || 0), 0)
-);
+const absentCount = computed(() =>
+  todaysAttendance.value.filter(i => i.status === 'absent').length
+)
 
-onMounted(async () => {
-  await attendanceStore.fetchTodaysAttendance();
-});
- const openDatePicker = (event:any) => {
-    event?.target?.showPicker();
-};
+const totalAdvances = computed(() =>
+  todaysAttendance.value.reduce(
+    (sum, i) => sum + (i.advance_amount || 0),
+    0
+  )
+)
 
-const onDateChange = async () => {
-  await attendanceStore.fetchTodaysAttendance(selectedDate.value);
-};
+onMounted(() => {
+  attendanceStore.fetchTodaysAttendance()
+})
 
-const refreshData = async () => {
-  await attendanceStore.fetchTodaysAttendance();
-};
+const onDateChange = () => {
+  attendanceStore.fetchTodaysAttendance(selectedDate.value)
+}
 
+const refreshData = () => {
+  attendanceStore.fetchTodaysAttendance()
+}
 
-const formatDate = (dateStr: string) => {
-  return new Date(dateStr).toLocaleDateString('en-IN', {
+const formatDate = (dateStr: string) =>
+  new Date(dateStr).toLocaleDateString('en-IN', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
-  });
-};
+    day: 'numeric',
+  })
 
-const formatTime = (timestamp: string) => {
-  if (!timestamp) return 'N/A';
-  return new Date(timestamp).toLocaleTimeString('en-IN', {
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-};
+const formatTime = (timestamp: string) =>
+  timestamp
+    ? new Date(timestamp).toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    : 'N/A'
 </script>
+<style>
+.row-absent {
+  background-color: #ffebee6a;
+}
+.row-present {
+  background-color: #e8f5e96a;
+}
+</style>

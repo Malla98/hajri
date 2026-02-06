@@ -1,177 +1,213 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-4">
-    <h1 class="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
-    
+  <v-container fluid class="pa-4">
+    <v-row class="mb-6">
+      <v-col cols="12">
+        <h1 class="text-h5 font-weight-bold">Dashboard</h1>
+      </v-col>
+    </v-row>
+
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-      <div class="bg-white p-6 rounded-xl shadow-sm">
-        <h3 class="text-lg font-semibold text-gray-700 mb-2">Total Employees</h3>
-        <p class="text-3xl font-bold text-blue-600">{{ stats.totalEmployees }}</p>
-      </div>
-      
-      <div class="bg-white p-6 rounded-xl shadow-sm">
-        <h3 class="text-lg font-semibold text-gray-700 mb-2">Today's Present</h3>
-        <p class="text-3xl font-bold text-green-600">{{ stats.todayPresent }}</p>
-      </div>
-      
-      <div class="bg-white p-6 rounded-xl shadow-sm">
-        <h3 class="text-lg font-semibold text-gray-700 mb-2">Total Salary</h3>
-        <p class="text-3xl font-bold text-purple-600">₹{{ stats.totalSalary }}</p>
-      </div>
-       <div class="bg-white p-6 rounded-xl shadow-sm">
-        <h3 class="text-lg font-semibold text-gray-700 mb-2">Attendance Report</h3>
-        <p class="text-1xl font-bold text-purple-600">
-          <NuxtLink
-            to="/reports/attendance"
-            class="text-blue-600 hover:underline"
-          >
-            View Report
-          </NuxtLink>
-        </p>
-      </div>
-    </div>
-    
-    <!-- Recent Activity -->
-    <div class="bg-white rounded-xl shadow-sm p-6">
-      <h2 class="text-xl font-semibold text-gray-900 mb-4">Recent Attendance</h2>
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead>
-            <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Present</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Absent</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Advances</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200">
-            <tr v-for="record in recentAttendance" :key="record.date">
-              <td class="px-4 py-3 text-sm text-gray-900">{{ formatDate(record.date) }}</td>
-              <td class="px-4 py-3 text-sm">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  {{ record.present }}
-                </span>
-              </td>
-              <td class="px-4 py-3 text-sm">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                  {{ record.absent }}
-                </span>
-              </td>
-              <td class="px-4 py-3 text-sm text-gray-900">₹{{ record.advances }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
+    <v-row class="mb-8" dense>
+      <v-col cols="12" md="3">
+        <v-card elevation="2" rounded="xl">
+          <v-card-text>
+            <div class="text-subtitle-1 text-medium-emphasis mb-2">
+              Total Employees
+            </div>
+            <div class="text-h4 font-weight-bold text-primary">
+              {{ stats.totalEmployees }}
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <v-col cols="12" md="3">
+        <v-card elevation="2" rounded="xl">
+          <v-card-text>
+            <div class="text-subtitle-1 text-medium-emphasis mb-2">
+              Today's Present
+            </div>
+            <div class="text-h4 font-weight-bold text-success">
+              {{ stats.todayPresent }}
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <v-col cols="12" md="3">
+        <v-card elevation="2" rounded="xl">
+          <v-card-text>
+            <div class="text-subtitle-1 text-medium-emphasis mb-2">
+              Total Salary
+            </div>
+            <div class="text-h4 font-weight-bold text-purple">
+              ₹{{ stats.totalSalary }}
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <v-col cols="12" md="3">
+        <v-card elevation="2" rounded="xl">
+          <v-card-text>
+            <div class="text-subtitle-1 text-medium-emphasis mb-2">
+              Attendance Report
+            </div>
+            <NuxtLink to="/reports/attendance">
+              <v-btn variant="text" color="primary">
+                View Report
+              </v-btn>
+            </NuxtLink>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- Recent Attendance -->
+    <v-card elevation="2" rounded="xl">
+      <v-card-title class="text-h6 font-weight-bold">
+        Recent Attendance
+      </v-card-title>
+
+      <v-data-table
+        :items="recentAttendance"
+        :headers="headers"
+        item-key="date"
+        class="elevation-0"
+        density="comfortable"
+      >
+        <template #item.date="{ item }">
+          {{ formatDate(item.date) }}
+        </template>
+
+        <template #item.present="{ item }">
+          <v-chip color="success" variant="tonal" size="small">
+            {{ item.present }}
+          </v-chip>
+        </template>
+
+        <template #item.absent="{ item }">
+          <v-chip color="error" variant="tonal" size="small">
+            {{ item.absent }}
+          </v-chip>
+        </template>
+
+        <template #item.advances="{ item }">
+          ₹{{ item.advances }}
+        </template>
+      </v-data-table>
+    </v-card>
+  </v-container>
 </template>
 
 <script setup lang="ts">
-import { useAuthStore } from '~/stores/auth';
+import { useAuthStore } from '~/stores/auth'
 
-const { $pb } = useNuxtApp();
-const authStore = useAuthStore();
+const { $pb } = useNuxtApp()
+const authStore = useAuthStore()
 
 const stats = ref({
   totalEmployees: 0,
   todayPresent: 0,
-  totalSalary: 0
-});
+  totalSalary: 0,
+})
 
-const recentAttendance = ref<any>([]);
+const recentAttendance = ref<any[]>([])
+
+const headers = [
+  { title: 'Date', key: 'date' },
+  { title: 'Present', key: 'present' },
+  { title: 'Absent', key: 'absent' },
+  { title: 'Advances', key: 'advances' },
+]
 
 onMounted(async () => {
-  await fetchStats();
-  await fetchRecentAttendance();
-});
+  await fetchStats()
+  await fetchRecentAttendance()
+})
 
 const fetchStats = async () => {
   try {
-    // Total employees
     const employees = await $pb.collection('employees').getFullList({
       filter: 'active = true && role = "worker"',
-    });
+    })
 
-    
-    // Today's attendance
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0]
     const attendance = await $pb.collection('attendance').getFullList({
-      filter: `date = "${today} 00:00:00.000Z" && status = "present"`
-    });
-    
-    // Calculate total salary
-    const totalSalary = employees.reduce((sum, emp) => sum + emp.salary, 0);
-    
+      filter: `date = "${today} 00:00:00.000Z" && status = "present"`,
+    })
+
+    const totalSalary = employees.reduce(
+      (sum, emp) => sum + emp.salary,
+      0
+    )
+
     stats.value = {
       totalEmployees: employees.length,
       todayPresent: attendance.length,
-      totalSalary
-    };
-    
-  } catch (error) {
-    console.error('Error fetching stats:', error);
+      totalSalary,
+    }
+  } catch (err) {
+    console.error(err)
   }
-};
+}
 
 const fetchRecentAttendance = async () => {
   try {
-    const today = new Date();
-    const last7Days = [];
-    
+    const today = new Date()
+    const last7Days: string[] = []
+
     for (let i = 0; i < 7; i++) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      last7Days.push(date.toISOString().split('T')[0]+' 00:00:00.000Z');
+      const d = new Date(today)
+      d.setDate(d.getDate() - i)
+      last7Days.push(d.toISOString().split('T')[0] + ' 00:00:00.000Z')
     }
-    
+
     const attendanceData = await $pb.collection('attendance').getFullList({
-      filter: last7Days.map(date => `date = "${date}"`).join(' || '),
-      sort: '-date'
-    });
+      filter: last7Days.map(d => `date = "${d}"`).join(' || '),
+      sort: '-date',
+    })
 
-
-    // Group by date
-    const grouped = attendanceData.reduce((acc:any, record) => {
-      const date = record.date;
+    const grouped = attendanceData.reduce((acc: any, record: any) => {
+      const date = record.date
       if (!acc[date]) {
-        acc[date] = { present: 0, absent: 0, advances: 0 };
+        acc[date] = { present: 0, absent: 0, advances: 0 }
       }
-      
+
       if (record.status === 'present') {
-        acc[date].present++;
-        acc[date].advances += record.advance_amount || 0;
+        acc[date].present++
+        acc[date].advances += record.advance_amount || 0
       } else {
-        acc[date].absent++;
+        acc[date].absent++
       }
-      
-      return acc;
-    }, {});
-    
+
+      return acc
+    }, {})
+
     recentAttendance.value = last7Days
       .filter(date => grouped[date])
       .map(date => ({
         date,
-        ...grouped[date]
-      }));
-   
-  } catch (error) {
-    console.error('Error fetching recent attendance:', error);
+        ...grouped[date],
+      }))
+  } catch (err) {
+    console.error(err)
   }
-};
+}
 
 const formatDate = (dateStr: string) => {
-  const date = new Date(dateStr);
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  
-  if (date.toDateString() === today.toDateString()) return 'Today';
-  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
-  
+  const date = new Date(dateStr)
+  const today = new Date()
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
+
+  if (date.toDateString() === today.toDateString()) return 'Today'
+  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday'
+
   return date.toLocaleDateString('en-IN', {
     weekday: 'short',
     month: 'short',
-    day: 'numeric'
-  });
-};
+    day: 'numeric',
+  })
+}
 </script>

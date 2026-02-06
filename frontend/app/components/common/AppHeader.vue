@@ -1,145 +1,147 @@
 <template>
-  <header class="bg-white shadow-sm border-b">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between items-center h-16">
-        <!-- Left: Logo -->
-         <img src="assets/favicon.png" alt="Kamal Global Tradelink" class="h-18 w-20" />
+  <!-- App Bar -->
+  <v-app-bar
+    app
+    color="white"
+    elevation="1"
+  >
+    <!-- Mobile menu button -->
+    <div class="d-flex align-center w-100">
+    <!-- Mobile menu icon -->
+    <v-app-bar-nav-icon
+      class="d-md-none"
+      @click="drawer = !drawer"
+    />
 
-        <!-- Desktop Navigation -->
-        <nav class="hidden md:flex items-center space-x-4">
-          <NuxtLink to="/" :class="$route.path === '/'
-      ? 'bg-blue-100 text-blue-700 p-2 rounded-md '
-      : 'text-gray-700 hover:bg-gray-100  p-2 rounded-md'">Attendance</NuxtLink>
+    <!-- Logo -->
+    <v-img
+      src="/favicon.png"
+      alt="Kamal Global Tradelink"
+      max-width="80"
+      contain
+      class="logo-responsive ml-2 d-none d-md-block"
+    />
 
-          <NuxtLink v-if="isAdmin" to="/employees" :class="$route.path === '/employees'
-      ? 'bg-blue-100 text-blue-700 p-2 rounded-md '
-      : 'text-gray-700 hover:bg-gray-100  p-2 rounded-md'">Employees</NuxtLink>
-          <NuxtLink v-if="isAdmin" to="/dashboard" :class="$route.path === '/dashboard'
-      ? 'bg-blue-100 text-blue-700 p-2 rounded-md '
-      : 'text-gray-700 hover:bg-gray-100  p-2 rounded-md'">Dashboard</NuxtLink>
-          <NuxtLink v-if="isAdmin" to="/reports/payout" :class="$route.path === '/reports/payout'
-      ? 'bg-blue-100 text-blue-700 p-2 rounded-md '
-      : 'text-gray-700 hover:bg-gray-100  p-2 rounded-md'">Payout Report</NuxtLink>
-
-          <NuxtLink v-if="!isAdmin && $route.fullPath !== '/login'" to="/login" >Login</NuxtLink>
-        </nav>
-
-        <!-- Right -->
-        <div class="hidden md:flex items-center gap-4">
-          <div v-if="user" class="text-sm text-gray-700">
-            <p class="font-medium">{{ user.name }}</p>
-          </div>
-
-          <button
-            v-if="isAdmin"
-            @click="handleLogout"
-            class="text-sm font-medium text-red-600 hover:text-red-800"
-          >
-            Logout
-          </button>
-        </div>
-
-        <!-- Mobile menu button -->
-        <button
-          class="md:hidden p-2 rounded-md hover:bg-gray-100"
-          @click="isOpen = !isOpen"
-        >
-          <svg
-            class="h-6 w-6 text-gray-700"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              :d="isOpen
-                ? 'M6 18L18 6M6 6l12 12'
-                : 'M4 6h16M4 12h16M4 18h16'"
-            />
-          </svg>
-        </button>
-      </div>
-    </div>
-
-   <!-- Mobile Overlay -->
-<div
-  v-if="isOpen"
-  class="fixed inset-0 z-40 bg-black/40 md:hidden"
-  @click="close"
-/>
-
-<!-- Mobile Drawer -->
-<div
-  class="fixed top-0 right-0 z-50 h-full w-72 bg-white shadow-lg
-         transform transition-transform duration-300 ease-in-out md:hidden"
-  :class="isOpen ? 'translate-x-0' : 'translate-x-full'"
->
-  <!-- Header -->
-  <div class="flex items-center justify-between px-4 h-16 border-b">
-    <span class="font-semibold text-gray-800"></span>
-    <button @click="close" class="p-2 rounded hover:bg-gray-100">
-      ✕
-    </button>
+    <!-- Spacer pushes logo to right on mobile -->
+    <v-spacer />
   </div>
-
-  <!-- Menu Items -->
-  <nav class="px-4 py-4 space-y-2">
-    <MobileLink to="/" @click="close">
-      Attendance
-    </MobileLink>
-
-    <MobileLink v-if="isAdmin" to="/employees" @click="close">
-      Employees
-    </MobileLink>
-
-    <MobileLink v-if="isAdmin" to="/dashboard" @click="close">
-      Dashboard
-    </MobileLink>
-    <MobileLink v-if="isAdmin" to="/reports/payout" @click="close">
-      Payout Report
-    </MobileLink>
-
-    <MobileLink v-if="!isAdmin" to="/login" @click="close">
-      Login
-    </MobileLink>
-
-    <div v-if="user" class="pt-4 text-sm text-gray-600 border-t">
-      Logged in as <strong>{{ user.name }}</strong>
-    </div>
-
-    <button
-      v-if="isAdmin"
-      @click="handleLogout"
-      class="w-full text-left text-red-600 font-medium pt-3"
+    <!-- Desktop Navigation -->
+    <v-btn
+      v-for="item in desktopMenu"
+      :key="item.to"
+      :to="item.to"
+      variant="text"
+      class="d-none d-md-flex"
+      :color="isActive(item.to) ? 'primary' : undefined"
     >
-      Logout
-    </button>
-  </nav>
-</div>
-  </header>
+      {{ item.label }}
+    </v-btn>
+
+    <!-- Desktop Right -->
+    <div class="d-none d-md-flex align-center ga-3 ml-4">
+      <span v-if="user" class="text-body-2">
+        {{ user.name }}
+      </span>
+
+      <v-btn
+        v-if="isAdmin"
+        color="error"
+        variant="text"
+        @click="handleLogout"
+      >
+        Logout
+      </v-btn>
+    </div>
+  <div class="d-flex align-center w-100 d-md-none justify-end">
+    <!-- Logo -->
+    <v-img
+      src="/favicon.png"
+      alt="Kamal Global Tradelink"
+      max-width="80"
+      contain
+      class="logo-responsive ml-2"
+    />
+  </div>
+  </v-app-bar>
+
+  <!-- Mobile Drawer -->
+  <v-navigation-drawer
+    v-model="drawer"
+    location="right"
+    temporary
+    width="280"
+  >
+    <v-list density="comfortable">
+      <v-list-item
+        v-for="item in mobileMenu"
+        :key="item.to"
+        :to="item.to"
+        @click="drawer = false"
+      >
+        <v-list-item-title>
+          {{ item.label }}
+        </v-list-item-title>
+      </v-list-item>
+
+      <v-divider class="my-3" />
+
+      <v-list-item v-if="user">
+        <v-list-item-subtitle>
+          Logged in as
+        </v-list-item-subtitle>
+        <v-list-item-title class="font-weight-medium">
+          {{ user.name }}
+        </v-list-item-title>
+      </v-list-item>
+
+      <v-list-item
+        v-if="isAdmin"
+        class="text-error"
+        @click="handleLogout"
+      >
+        <v-list-item-title>
+          Logout
+        </v-list-item-title>
+      </v-list-item>
+    </v-list>
+  </v-navigation-drawer>
 </template>
+
 <script setup lang="ts">
-import { useRouter } from '#app'
+import { useRoute, useRouter } from '#app'
 import { computed, ref } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 
 const authStore = useAuthStore()
 const router = useRouter()
+const route = useRoute()
+
+const drawer = ref(false)
 
 const user = computed(() => authStore.user)
 const isAdmin = computed(() => authStore.isAdmin)
 
-const isOpen = ref(false)
+const desktopMenu = computed(() => [
+  { label: 'Attendance', to: '/' },
+  ...(isAdmin.value
+    ? [
+        { label: 'Employees', to: '/employees' },
+        { label: 'Dashboard', to: '/dashboard' },
+        { label: 'Payout Report', to: '/reports/payout' },
+      ]
+    : []),
+  ...(!isAdmin.value && route.path !== '/login'
+    ? [{ label: 'Login', to: '/login' }]
+    : []),
+])
 
-const close = () => {
-  isOpen.value = false
-}
+const mobileMenu = desktopMenu
+
+const isActive = (path: string) => route.path === path
 
 const handleLogout = () => {
   authStore.logout()
-  isOpen.value = false
+  drawer.value = false
   router.push('/login')
 }
 </script>

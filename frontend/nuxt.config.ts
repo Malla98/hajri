@@ -2,9 +2,19 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   ssr: false,
   devtools: { enabled: true },
+   css: [
+    'vuetify/styles',
+  ],
+  build: {
+    transpile: ['vuetify'],
+  },
+  vuetify: {
+    icons: {
+      defaultSet: 'mdi',
+    },
+  },
   modules: [
     '@pinia/nuxt',
-    '@nuxtjs/tailwindcss' // Add this
   ],
    nitro: {
     preset: 'static',
