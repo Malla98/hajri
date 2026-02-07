@@ -51,8 +51,8 @@
 
               <td>
                 <v-text-field v-if="isAdmin" v-model.number="item.advance_amount" type="number" density="compact"
-                  hide-details min="0" step="100" style="max-width: 120px"
-                  @blur="attendanceStore.saveAttendance(item)" />
+                  hide-details min="0" step="100" style="max-width: 120px;background: rgba(255, 255, 255, 0.6);"
+                  @blur="attendanceStore.saveAttendance(item)" color="primary" variant="outlined" />
                 <span v-else>
                   ₹{{ item.advance_amount || 0 }}
                 </span>
@@ -60,7 +60,8 @@
 
               <td>
                 <v-text-field v-if="isAdmin" v-model="item.remark" density="compact" hide-details
-                  @blur="attendanceStore.saveAttendance(item)" />
+                  style="background: rgba(255, 255, 255, 0.6);" @blur="attendanceStore.saveAttendance(item)"
+                  color="primary" variant="outlined" />
                 <span v-else>
                   {{ item.remark || '-' }}
                 </span>
@@ -68,7 +69,7 @@
 
               <td>
                 <v-switch v-model="item.status" true-value="present" false-value="absent" :disabled="!isAdmin"
-                  color="success"   base-color="error" density="compact" hide-details 
+                  color="success" base-color="error" density="compact" hide-details
                   @update:model-value="attendanceStore.saveAttendance(item)">
                   <template #label>
                     <span :class="item.status === 'present'
@@ -85,14 +86,32 @@
       </v-card>
 
       <!-- Mobile Cards -->
+      <v-row v-if="isAdmin && smAndDown" class="d-lg-none" dense>
+        <v-container class="mt-4 pa-2 border rounded-lg" >
+          <div class="d-flex align-center ga-2 overflow-x-auto">
+            <v-chip color="success" variant="tonal" rounded="1" size="small">
+              <strong>{{ presentCount }}</strong>&nbsp;Present
+            </v-chip>
+
+            <v-chip color="error" variant="tonal" rounded="1" size="small">
+              <strong>{{ absentCount }}</strong>&nbsp;Absent
+            </v-chip>
+
+            <v-chip color="primary" variant="tonal" rounded="1" size="small">
+              ₹{{ totalAdvances }}&nbsp;Total Advances
+
+            </v-chip>
+          </div>
+        </v-container>
+      </v-row>
       <v-row class="d-lg-none" dense>
         <v-col v-for="item in todaysAttendance" :key="item.id" cols="12">
           <v-card elevation="1" rounded="xl" :class="item.status === 'present' ? 'row-present' : 'row-absent'">
             <v-card-title class="d-flex justify-space-between">
               <span class="font-weight-bold text-primary">{{ item.name }}</span>
               <v-switch v-model="item.status" true-value="present" false-value="absent" :disabled="!isAdmin"
-                color="success"   base-color="error" density="compact" hide-details 
-                @update:model-value="attendanceStore.saveAttendance(item)" >
+                color="success" base-color="error" density="compact" hide-details
+                @update:model-value="attendanceStore.saveAttendance(item)">
                 <template #label>
                   <v-chip :class="item.status === 'present'
                     ? 'text-success'
@@ -109,8 +128,9 @@
                   <div class="text-caption text-medium-emphasis">
                     Advance
                   </div>
-                  <v-text-field v-if="isAdmin" v-model.number="item.advance_amount" type="number" density="compact" min="0" step="100" style="max-width: 140px"
-                    hide-details @blur="attendanceStore.saveAttendance(item)" />
+                  <v-text-field v-if="isAdmin" v-model.number="item.advance_amount" type="number" density="compact"
+                    min="0" step="100" style="max-width: 140px;background: rgba(255, 255, 255, 0.6);" hide-details
+                    @blur="attendanceStore.saveAttendance(item)" color="primary" variant="outlined" />
                   <div v-else class="font-weight-medium">
                     ₹{{ item.advance_amount || 0 }}
                   </div>
@@ -121,7 +141,8 @@
                     Remark
                   </div>
                   <v-text-field v-if="isAdmin" v-model="item.remark" density="compact" hide-details
-                    @blur="attendanceStore.saveAttendance(item)" />
+                    style="background: rgba(255, 255, 255, 0.6);" @blur="attendanceStore.saveAttendance(item)"
+                    color="primary" variant="outlined" />
                   <div v-else class="font-weight-medium">
                     {{ item.remark || '-' }}
                   </div>
@@ -133,36 +154,28 @@
       </v-row>
 
       <!-- Summary -->
-      <v-card v-if="isAdmin" class="mt-8" elevation="1" rounded="xl">
-        <v-card-title>
-          Today’s Summary
-        </v-card-title>
+      <v-card v-if="isAdmin && !smAndDown" class="mt-8" elevation="1" rounded="xl">
+        <v-card-title>Today’s Summary</v-card-title>
 
         <v-card-text>
           <v-row>
             <v-col cols="12" sm="4">
               <v-sheet class="pa-4 text-center" color="green-lighten-5" rounded>
-                <div class="text-h5 text-success">
-                  {{ presentCount }}
-                </div>
+                <div class="text-h5 text-success">{{ presentCount }}</div>
                 <div class="text-body-2">Present</div>
               </v-sheet>
             </v-col>
 
             <v-col cols="12" sm="4">
               <v-sheet class="pa-4 text-center" color="red-lighten-5" rounded>
-                <div class="text-h5 text-error">
-                  {{ absentCount }}
-                </div>
+                <div class="text-h5 text-error">{{ absentCount }}</div>
                 <div class="text-body-2">Absent</div>
               </v-sheet>
             </v-col>
 
             <v-col cols="12" sm="4">
               <v-sheet class="pa-4 text-center" color="blue-lighten-5" rounded>
-                <div class="text-h5 text-primary">
-                  ₹{{ totalAdvances }}
-                </div>
+                <div class="text-h5 text-primary">₹{{ totalAdvances }}</div>
                 <div class="text-body-2">Total Advances</div>
               </v-sheet>
             </v-col>
@@ -176,8 +189,12 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { computed, onMounted } from 'vue'
+import { useDisplay } from 'vuetify'
 import { useAttendanceStore } from '~/stores/attendance'
 import { useAuthStore } from '~/stores/auth'
+
+const { smAndDown } = useDisplay()
+
 
 const authStore = useAuthStore()
 const attendanceStore = useAttendanceStore()
@@ -236,7 +253,14 @@ const formatTime = (timestamp: string) =>
 .row-absent {
   background-color: #ffebee6a;
 }
+
 .row-present {
   background-color: #e8f5e96a;
+}
+
+@media (max-width: 600px) {
+  .v-chip {
+    font-size: 12px;
+  }
 }
 </style>

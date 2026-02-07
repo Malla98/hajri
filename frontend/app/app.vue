@@ -11,3 +11,10 @@ onMounted(() => {
   auth.checkAuth();
 });
 </script>
+<style>
+@media (max-width: 480px) {
+  html, body {
+    touch-action: manipulation;
+  }
+}
+</style>
