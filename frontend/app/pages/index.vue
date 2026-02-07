@@ -250,13 +250,95 @@ const formatTime = (timestamp: string) =>
     : 'N/A'
 </script>
 <style>
+.row-present,
 .row-absent {
-  background-color: #ffebee6a;
+  transition:
+    background-color 350ms ease,
+    box-shadow 350ms ease,
+    border-left-color 350ms ease,
+    transform 200ms ease;
+}
+
+/* PRESENT */
+.row-present {
+  background: linear-gradient(
+    135deg,
+    rgba(34, 197, 94, 0.12),
+    rgba(34, 197, 94, 0.04)
+  );
+  border-left: 4px solid #22c55e;
+  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.25);
+}
+
+/* ABSENT */
+.row-absent {
+  background: linear-gradient(
+    135deg,
+    rgba(239, 68, 68, 0.12),
+    rgba(239, 68, 68, 0.04)
+  );
+  border-left: 4px solid #ef4444;
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.25);
+}
+.row-present,
+.row-absent {
+  position: relative;
+  overflow: hidden;
+}
+
+/* animated sweep */
+.row-present::after,
+.row-absent::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255, 255, 255, 0.35),
+    transparent
+  );
+  transform: translateX(-120%);
+  animation: sweep 600ms ease-out;
+  pointer-events: none;
+}
+
+@keyframes sweep {
+  to {
+    transform: translateX(120%);
+  }
 }
 
 .row-present {
-  background-color: #e8f5e96a;
+  animation: presentPulse 300ms ease-out;
 }
+
+.row-absent {
+  animation: absentPulse 300ms ease-out;
+}
+
+@keyframes presentPulse {
+  0% {
+    transform: scale(0.98);
+    box-shadow: 0 0 0 rgba(34, 197, 94, 0.0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 8px 24px rgba(34, 197, 94, 0.35);
+  }
+}
+
+@keyframes absentPulse {
+  0% {
+    transform: scale(0.98);
+    box-shadow: 0 0 0 rgba(239, 68, 68, 0.0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.35);
+  }
+}
+
 
 @media (max-width: 600px) {
   .v-chip {
