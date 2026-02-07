@@ -86,7 +86,7 @@
       </v-card>
 
       <!-- Mobile Cards -->
-      <v-row v-if="isAdmin && smAndDown" class="d-lg-none" dense>
+      <v-row v-if="smAndDown" class="d-lg-none" dense>
         <v-container class="mt-4 pa-2 border rounded-lg" >
           <div class="d-flex align-center ga-2 overflow-x-auto">
             <v-chip color="success" variant="tonal" rounded="1" size="small">
@@ -154,7 +154,7 @@
       </v-row>
 
       <!-- Summary -->
-      <v-card v-if="isAdmin && !smAndDown" class="mt-8" elevation="1" rounded="xl">
+      <v-card v-if="!smAndDown" class="mt-8" elevation="1" rounded="xl">
         <v-card-title>Today’s Summary</v-card-title>
 
         <v-card-text>
