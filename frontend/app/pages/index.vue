@@ -111,7 +111,7 @@
                   </div>
                 </td>
                 <td v-if="isAdmin" class="text-caption text-medium-emphasis">
-                  {{ formatTime(item.updated_at ?? '') }}
+                  {{ formatTime(item.updated ?? '') }}
                 </td>
                 <td>
                   <v-text-field
@@ -199,7 +199,7 @@
                   <div>
                     <div class="mob-emp-name">{{ item.name }}</div>
                     <div v-if="isAdmin" class="text-caption text-medium-emphasis">
-                      Updated {{ formatTime(item.updated_at ?? '') }}
+                      Updated {{ formatTime(item.updated ?? '') }}
                     </div>
                   </div>
                 </div>

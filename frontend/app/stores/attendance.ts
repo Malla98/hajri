@@ -9,7 +9,7 @@ interface AttendanceItem {
   status: string;
   advance_amount: number;
   remark: string;
-  updated_at: string | null;
+  updated: string | null;
 }
 
 interface AttendanceState {
@@ -49,7 +49,7 @@ export const useAttendanceStore = defineStore('attendance', {
             status: existing?.status || 'absent',
             advance_amount: existing?.advance_amount || 0,
             remark: existing?.remark || '',
-            updated_at: existing?.updated_at || null,
+            updated: existing?.updated || null,
           };
         });
       } finally {
@@ -85,7 +85,7 @@ export const useAttendanceStore = defineStore('attendance', {
           item.attendanceId = new_data.id;
         }
 
-        item.updated_at = new_data.updated_at;
+        item.updated = new_data.updated;
 
         await $pb.collection('attendance_logs').create({
           attendance: item.attendanceId,
