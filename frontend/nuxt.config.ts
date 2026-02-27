@@ -2,32 +2,33 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   ssr: false,
   devtools: { enabled: true },
-   css: [
+
+  css: [
     'vuetify/styles',
+    '@mdi/font/css/materialdesignicons.min.css', // ← THIS is what makes icons show
   ],
+
   build: {
     transpile: ['vuetify'],
   },
-  vuetify: {
-    icons: {
-      defaultSet: 'mdi',
-    },
-  },
+
   modules: [
     '@pinia/nuxt',
   ],
-   nitro: {
+
+  nitro: {
     preset: 'static',
-     output: {
+    output: {
       publicDir: '../pb_public',
     },
   },
-   app: {
+
+  app: {
     baseURL: '/',
     buildAssetsDir: '/_nuxt/',
     head: {
       meta: [
-       { name: 'viewport',content: 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'},
+        { name: 'viewport', content: 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no' },
       ],
       link: [
         { rel: 'manifest', href: '/manifest.json' },
@@ -37,6 +38,7 @@ export default defineNuxtConfig({
       ]
     }
   },
+
   runtimeConfig: {
     public: {
       pocketbaseUrl: process.env.POCKETBASE_URL || 'https://localhost:8090'

@@ -1,40 +1,33 @@
-
 export function useAttendanceCalc() {
-const calculate = ({
-salary,
-attendance,
-totalDays
-}: {
-salary: number
-attendance: any[]
-totalDays: number
-}) => {
-const perDay = salary / totalDays
+  const calculate = ({
+    perDaySalary,
+    attendance,
+  }: {
+    perDaySalary: number
+    attendance: any[]
+  }) => {
+    let presentDays = 0
+    let absentDays = 0
+    let advance = 0
 
+    attendance.forEach((a) => {
+      if (a.status === 'present') presentDays++
+      else absentDays++
 
-let presentDays = 0
-let advance = 0
+      advance += Number(a.advance_amount || 0)
+    })
 
+    const gross = presentDays * perDaySalary
+    const net = gross - advance
 
-attendance.forEach(a => {
-if (a.status === 'present') presentDays++
-if (a.advance_amount) advance += a.advance_amount
-})
+    return {
+      presentDays,
+      absentDays,
+      gross,
+      advance,
+      net,
+    }
+  }
 
-
-const gross = presentDays * perDay
-const net = gross - advance
-
-
-return {
-presentDays,
-absentDays: totalDays - presentDays,
-gross,
-advance,
-net
-}
-}
-
-
-return { calculate }
+  return { calculate }
 }
