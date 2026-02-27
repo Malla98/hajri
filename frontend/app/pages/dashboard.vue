@@ -155,7 +155,7 @@
         <div class="table-topbar px-4 py-3">
           <div class="d-flex align-center gap-2">
             <v-icon size="18" color="primary">mdi-calendar-clock</v-icon>
-            <span class="text-body-2 font-weight-bold">Recent Attendance</span>
+            <span class="text-body-2 font-weight-bold ml-3">Recent Attendance</span>
           </div>
           <v-chip size="x-small" color="primary" variant="tonal">7 days</v-chip>
         </div>
