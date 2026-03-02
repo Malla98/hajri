@@ -3,16 +3,16 @@ import dayjs from 'dayjs'
 
 const { $pb } = useNuxtApp()
 
-const rows = ref<{ name: string; present: number; absent: number; total: number; rate: number }[]>([])
+const rows    = ref<{ name: string; present: number; absent: number; total: number; rate: number }[]>([])
 const loading = ref(false)
-const search = ref('')
+const search  = ref('')
 
 const headers = [
-  { title: 'Employee', key: 'name' },
-  { title: 'Present', key: 'present', align: 'center' },
-  { title: 'Absent', key: 'absent', align: 'center' },
-  { title: 'Total', key: 'total', align: 'center' },
-  { title: 'Attendance Rate', key: 'rate', align: 'center' },
+  { title: 'Employee',        key: 'name' },
+  { title: 'Present',         key: 'present', align: 'center' },
+  { title: 'Absent',          key: 'absent',  align: 'center' },
+  { title: 'Total',           key: 'total',   align: 'center' },
+  { title: 'Attendance Rate', key: 'rate',    align: 'center' },
 ]
 
 const filteredRows = computed(() => {
@@ -21,14 +21,15 @@ const filteredRows = computed(() => {
   return rows.value.filter(r => r.name.toLowerCase().includes(q))
 })
 
-// Summary stats
 const totalPresent = computed(() => rows.value.reduce((s, r) => s + r.present, 0))
 const totalAbsent  = computed(() => rows.value.reduce((s, r) => s + r.absent, 0))
 const overallRate  = computed(() => {
   const total = totalPresent.value + totalAbsent.value
   return total > 0 ? Math.round((totalPresent.value / total) * 100) : 0
 })
-const topAttendee  = computed(() => rows.value.reduce((best, r) => r.rate > (best?.rate ?? -1) ? r : best, null as any))
+const topAttendee = computed(() =>
+  rows.value.reduce((best, r) => r.rate > (best?.rate ?? -1) ? r : best, null as any)
+)
 
 const rateColor = (rate: number) => {
   if (rate >= 80) return '#4CAF50'
@@ -36,35 +37,122 @@ const rateColor = (rate: number) => {
   return '#F44336'
 }
 
-const avatarColors = [
-  '#1976D2','#388E3C','#7B1FA2','#E65100',
-  '#00796B','#C62828','#283593','#2E7D32',
-]
+const avatarColors = ['#1976D2','#388E3C','#7B1FA2','#E65100','#00796B','#C62828','#283593','#2E7D32']
 const avatarBg = (name: string) => avatarColors[(name?.charCodeAt(0) || 0) % avatarColors.length] + '22'
 const avatarFg = (name: string) => avatarColors[(name?.charCodeAt(0) || 0) % avatarColors.length]
+
+// ── Helper: count present/absent for one employee
+// using calendar logic (no record on past day = absent) ──
+const calcEmployeeStats = (
+  employeeId: string,
+  records: any[],         // all attendance records for this employee
+  joinedDate?: string,    // optional: employee joined date to avoid counting days before joining
+) => {
+  const today = dayjs()
+
+  // Find the earliest record date OR fallback to 1 year ago
+  const empRecords = records.filter(r => r.employee === employeeId)
+  const firstRecord = empRecords.length > 0
+    ? dayjs(empRecords.reduce((min, r) =>
+        dayjs(r.date).isBefore(dayjs(min.date)) ? r : min
+      ).date)
+    : today.subtract(1, 'year')
+
+  // Build a set of dates that have a record
+  const recordMap: Record<string, string> = {}
+  empRecords.forEach(r => {
+    const d = dayjs(r.date).format('YYYY-MM-DD')
+    recordMap[d] = r.status
+  })
+
+  let present = 0
+  let absent  = 0
+
+  // Loop from first recorded day to today
+  let cursor = firstRecord.startOf('day')
+  const end  = today.startOf('day')
+
+  while (!cursor.isAfter(end)) {
+    const dateStr = cursor.format('YYYY-MM-DD')
+    const status  = recordMap[dateStr]
+
+    if (status === 'present') {
+      present++
+    } else {
+      // no record OR status=absent → absent
+      absent++
+    }
+
+    cursor = cursor.add(1, 'day')
+  }
+
+  return { present, absent }
+}
 
 onMounted(async () => {
   loading.value = true
   try {
+    // 1. Get all active workers
+    const employees = await $pb.collection('employees').getFullList({
+      filter: 'active=true && role="worker"',
+      sort: 'name',
+    })
+
+    // 2. Get ALL attendance records for all workers in one query
     const records = await $pb.collection('attendance').getFullList({
-      expand: 'employee',
       filter: 'employee.role="worker"',
     })
-    const map: Record<string, any> = {}
-    records.forEach((a: any) => {
-      const name = a.expand?.employee?.name
-      if (!name) return
-      if (!map[name]) map[name] = { name, present: 0, absent: 0 }
-      map[name][a.status]++
-    })
-    rows.value = Object.values(map).map((r: any) => ({
-      ...r,
-      total: r.present + r.absent,
-      rate: r.present + r.absent > 0 ? Math.round((r.present / (r.present + r.absent)) * 100) : 0,
-    })).sort((a, b) => b.rate - a.rate)
+
+    // 3. Calculate per employee using calendar logic
+    rows.value = employees.map(emp => {
+      const { present, absent } = calcEmployeeStats(emp.id, records)
+      const total = present + absent
+      const rate  = total > 0 ? Math.round((present / total) * 100) : 0
+      return { name: emp.name, present, absent, total, rate }
+    }).sort((a, b) => b.rate - a.rate)
+
   } finally {
     loading.value = false
   }
+})
+const { downloading, downloadPDF, downloadExcel } = useReportDownload()
+
+const summaryColumns = [
+  { header: 'Employee',        key: 'name',    width: 22 },
+  { header: 'Present',         key: 'present', width: 12, align: 'center' },
+  { header: 'Absent',          key: 'absent',  width: 12, align: 'center' },
+  { header: 'Total Days',      key: 'total',   width: 12, align: 'center' },
+  { header: 'Attendance Rate', key: 'rateFmt', width: 16, align: 'center' },
+]
+
+const summaryExportRows = computed(() =>
+  rows.value.map(r => ({ ...r, rateFmt: `${r.rate}%` }))
+)
+
+const summaryTotals = computed(() => ({
+  name:    `Totals (${rows.value.length} employees)`,
+  present: totalPresent.value,
+  absent:  totalAbsent.value,
+  total:   totalPresent.value + totalAbsent.value,
+  rateFmt: `${overallRate.value}%`,
+}))
+
+const onDownloadPDF = () => downloadPDF({
+  filename:  `attendance-summary-${dayjs().format('YYYY-MM-DD')}`,
+  title:     'Attendance Summary Report',
+  subtitle:  `All-time · ${rows.value.length} employees · Overall: ${overallRate.value}%`,
+  columns:   summaryColumns,
+  rows:      summaryExportRows.value,
+  totalsRow: summaryTotals.value,
+})
+
+const onDownloadExcel = () => downloadExcel({
+  filename:  `attendance-summary-${dayjs().format('YYYY-MM-DD')}`,
+  title:     'Attendance Summary Report',
+  subtitle:  `All-time · ${rows.value.length} employees · Overall: ${overallRate.value}%`,
+  columns:   summaryColumns,
+  rows:      summaryExportRows.value,
+  totalsRow: summaryTotals.value,
 })
 </script>
 
@@ -155,7 +243,12 @@ onMounted(async () => {
             <v-icon size="18" color="primary">mdi-chart-bar</v-icon>
             <span class="text-body-2 font-weight-bold ml-3">Employee Breakdown</span>
           </div>
-          <v-chip size="x-small" color="primary" variant="tonal">{{ filteredRows.length }} employees</v-chip>
+          <DownloadButtons
+  :downloading="downloading"
+  :disabled="loading || rows.length === 0"
+  @pdf="onDownloadPDF"
+  @excel="onDownloadExcel"
+/>
         </div>
         <v-divider />
         <v-data-table

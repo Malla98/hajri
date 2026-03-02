@@ -1,22 +1,21 @@
 <script setup lang="ts">
 import dayjs from 'dayjs'
-
+const { downloading, downloadPDF, downloadExcel } = useReportDownload()
 const { $pb } = useNuxtApp()
-const { calculate } = useAttendanceCalc()
 
-const month = ref(dayjs().format('YYYY-MM'))
-const rows = ref<any[]>([])
-const loading = ref(false)
-const search = ref('')
+const month        = ref(dayjs().format('YYYY-MM'))
+const rows         = ref<any[]>([])
+const loading      = ref(false)
+const search       = ref('')
 const dateInputRef = ref<HTMLInputElement | null>(null)
 
 const headers = [
   { title: 'Employee', key: 'employee' },
-  { title: 'Present', key: 'presentDays', align: 'center' },
-  { title: 'Absent', key: 'absentDays', align: 'center' },
-  { title: 'Gross', key: 'gross', align: 'end' },
-  { title: 'Advance', key: 'advance', align: 'end' },
-  { title: 'Net Pay', key: 'net', align: 'end' },
+  { title: 'Present',  key: 'presentDays', align: 'center' },
+  { title: 'Absent',   key: 'absentDays',  align: 'center' },
+  { title: 'Gross',    key: 'gross',        align: 'end' },
+  { title: 'Advance',  key: 'advance',      align: 'end' },
+  { title: 'Net Pay',  key: 'net',          align: 'end' },
 ]
 
 const filteredRows = computed(() => {
@@ -25,12 +24,11 @@ const filteredRows = computed(() => {
   return rows.value.filter(r => r.employee.toLowerCase().includes(q))
 })
 
-// Summary totals
-const totalGross   = computed(() => rows.value.reduce((s, r) => s + r.gross, 0))
-const totalAdvance = computed(() => rows.value.reduce((s, r) => s + r.advance, 0))
-const totalNet     = computed(() => rows.value.reduce((s, r) => s + r.net, 0))
-const totalPresent = computed(() => rows.value.reduce((s, r) => s + r.presentDays, 0))
-const totalAbsent  = computed(() => rows.value.reduce((s, r) => s + r.absentDays, 0))
+const totalGross   = computed(() => rows.value.reduce((s, r) => s + r.gross,        0))
+const totalAdvance = computed(() => rows.value.reduce((s, r) => s + r.advance,      0))
+const totalNet     = computed(() => rows.value.reduce((s, r) => s + r.net,          0))
+const totalPresent = computed(() => rows.value.reduce((s, r) => s + r.presentDays,  0))
+const totalAbsent  = computed(() => rows.value.reduce((s, r) => s + r.absentDays,   0))
 const monthLabel   = computed(() => dayjs(`${month.value}-01`).format('MMMM YYYY'))
 
 const avatarColors = ['#1976D2','#388E3C','#7B1FA2','#E65100','#00796B','#C62828','#283593','#2E7D32']
@@ -43,29 +41,130 @@ const openMonthPicker = () => {
   dateInputRef.value?.click()
 }
 
+// ── Calendar-based calc for one employee in a given month ──
+// No DB record on a past day = absent (same logic as [id].vue)
+const calcForMonth = (
+  empId: string,
+  salary: number,
+  allRecords: any[],
+  month: string,
+) => {
+  const start       = dayjs(`${month}-01`)
+  const daysInMonth = start.daysInMonth()
+  const today       = dayjs()
+
+  // Build date → record map for this employee
+  const recordMap: Record<string, any> = {}
+  allRecords
+    .filter(r => r.employee === empId)
+    .forEach(r => {
+      recordMap[dayjs(r.date).format('YYYY-MM-DD')] = r
+    })
+
+  let presentDays = 0
+  let absentDays  = 0
+  let advance     = 0
+
+  for (let i = 1; i <= daysInMonth; i++) {
+    const current = start.date(i)
+
+    // Skip future dates — don't count them as absent
+    if (current.isAfter(today, 'day')) continue
+
+    const dateStr = current.format('YYYY-MM-DD')
+    const record  = recordMap[dateStr]
+
+    if (record?.status === 'present') {
+      presentDays++
+      advance += Number(record.advance_amount || 0)
+    } else {
+      // no record OR status=absent → absent
+      absentDays++
+      // still collect advance if record exists but status is absent
+      if (record) advance += Number(record.advance_amount || 0)
+    }
+  }
+
+  const gross = presentDays * salary
+  const net   = gross - advance
+
+  return { presentDays, absentDays, advance, gross, net }
+}
+
 const loadPayout = async () => {
   if (loading.value) return
   loading.value = true
   try {
+    // 1. Get all active workers
     const employees = await $pb.collection('employees').getFullList({
       filter: 'active=true && role="worker"',
     })
+
+    // 2. Fetch ALL attendance records for this month in ONE query
     const start = `${month.value}-01`
-    const end = dayjs(start).endOf('month').format('YYYY-MM-DD')
-    rows.value = []
-    for (const emp of employees) {
-      const attendance = await $pb.collection('attendance').getFullList({
-        filter: `employee="${emp.id}" && date >= "${start}" && date <= "${end}"`,
-      })
-      const calc = calculate({ perDaySalary: emp.salary, attendance })
-      rows.value.push({ employee: emp.name, ...calc })
-    }
+    const end   = dayjs(start).endOf('month').format('YYYY-MM-DD')
+    const allRecords = await $pb.collection('attendance').getFullList({
+      filter: `date >= "${start}" && date <= "${end}"`,
+    })
+
+    // 3. Calculate per employee using calendar logic
+    rows.value = employees.map(emp => ({
+      employee: emp.name,
+      ...calcForMonth(emp.id, emp.salary, allRecords, month.value),
+    }))
+
   } finally {
     loading.value = false
   }
 }
 
 watch(month, loadPayout, { immediate: true })
+
+const payoutColumns = [
+  { header: 'Employee',     key: 'employee',    width: 22 },
+  { header: 'Present Days', key: 'presentDays', width: 14, align: 'center' },
+  { header: 'Absent Days',  key: 'absentDays',  width: 14, align: 'center' },
+  { header: 'Gross (₹)',    key: 'grossFmt',    width: 14, align: 'right' },
+  { header: 'Advance (₹)',  key: 'advanceFmt',  width: 14, align: 'right' },
+  { header: 'Net Pay (₹)',  key: 'netFmt',      width: 14, align: 'right' },
+]
+
+// Formatted rows for export (numbers → strings with ₹)
+const exportRows = computed(() =>
+  rows.value.map(r => ({
+    ...r,
+    grossFmt:   `₹${r.gross.toFixed(2)}`,
+    advanceFmt: r.advance > 0 ? `-₹${r.advance.toFixed(2)}` : '—',
+    netFmt:     `₹${r.net.toFixed(2)}`,
+  }))
+)
+
+const exportTotals = computed(() => ({
+  employee:    `Totals (${rows.value.length} employees)`,
+  presentDays: totalPresent.value,
+  absentDays:  totalAbsent.value,
+  grossFmt:    `₹${totalGross.value.toFixed(2)}`,
+  advanceFmt:  `-₹${totalAdvance.value.toFixed(2)}`,
+  netFmt:      `₹${totalNet.value.toFixed(2)}`,
+}))
+
+const onDownloadPDF = () => downloadPDF({
+  filename:  `payout-${month.value}`,
+  title:     'Monthly Payout Report',
+  subtitle:  `${monthLabel.value} · ${rows.value.length} employees`,
+  columns:   payoutColumns,
+  rows:      exportRows.value,
+  totalsRow: exportTotals.value,
+})
+
+const onDownloadExcel = () => downloadExcel({
+  filename:  `payout-${month.value}`,
+  title:     'Monthly Payout Report',
+  subtitle:  `${monthLabel.value} · ${rows.value.length} employees`,
+  columns:   payoutColumns,
+  rows:      exportRows.value,
+  totalsRow: exportTotals.value,
+})
 </script>
 
 <template>
@@ -175,7 +274,12 @@ watch(month, loadPayout, { immediate: true })
             <v-icon size="18" color="primary">mdi-currency-inr</v-icon>
             <span class="text-body-2 font-weight-bold ml-3">Payout Breakdown</span>
           </div>
-          <v-chip size="x-small" color="primary" variant="tonal">{{ filteredRows.length }} employees</v-chip>
+          <DownloadButtons
+  :downloading="downloading"
+  :disabled="loading || rows.length === 0"
+  @pdf="onDownloadPDF"
+  @excel="onDownloadExcel"
+/>
         </div>
         <v-divider />
 

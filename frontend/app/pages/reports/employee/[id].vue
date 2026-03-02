@@ -1,9 +1,20 @@
 <script setup lang="ts">
 import dayjs from 'dayjs'
+const {
+  month,
+  loading,
+  employee,
+  calendarDays,
+  tableRows,
+  summary,
+  attendanceRate,
+  rateColor,
+  monthLabel,
+  loadReport,
+} = useEmployeeReport()
+const { downloading, downloadPDF, downloadExcel } = useReportDownload()
 
-const route = useRoute()
-const { $pb } = useNuxtApp()
-const { calculate } = useAttendanceCalc()
+const showCalcBreakdown = ref(false)
 
 const desktopPicker = ref<HTMLInputElement | null>(null)
 const mobilePicker  = ref<HTMLInputElement | null>(null)
@@ -14,76 +25,65 @@ const openMonthPicker = (which: 'desktop' | 'mobile') => {
   el?.focus()
   el?.click()
 }
-const month = ref(dayjs().format('YYYY-MM'))
-const loading = ref(false)
-const showCalcBreakdown = ref(false)
 
-const employee = ref<any>(null)
-const attendance = ref<any[]>([])
-const summary = ref<any>(null)
-
+// Keys match calendarDays shape from useEmployeeReport:
+// { date, day, weekday, status, advance, remark }
 const headers = [
-  { title: 'Date', key: 'date' },
-  { title: 'Day', key: 'day' },
-  { title: 'Status', key: 'status', align: 'center' },
-  { title: 'Advance Taken', key: 'advance_amount', align: 'end' },
-  { title: 'Remark', key: 'remark' },
+  { title: 'Date',          key: 'date' },
+  { title: 'Day',           key: 'weekday' },
+  { title: 'Status',        key: 'status',  align: 'center' },
+  { title: 'Advance Taken', key: 'advance', align: 'end' },
+  { title: 'Remark',        key: 'remark' },
 ]
 
-const loadReport = async () => {
-  if (loading.value) return
-  loading.value = true
-  try {
-    const empId = route.params.id as string
-    if (!empId) return
-    employee.value = await $pb.collection('employees').getOne(empId)
-    const start = `${month.value}-01`
-    const end = dayjs(start).endOf('month').format('YYYY-MM-DD')
-    attendance.value = await $pb.collection('attendance').getFullList({
-      filter: `employee="${empId}" && date >= "${start}" && date <= "${end}"`,
-      sort: 'date',
-    })
-    summary.value = calculate({
-      perDaySalary: employee.value.salary,
-      attendance: attendance.value,
-    })
-  } finally {
-    loading.value = false
-  }
-}
+const getInitials = (name: string) =>
+  name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || '??'
 
-watch(() => [month.value, route.params.id], loadReport, { immediate: true })
+onMounted(() => loadReport())
 
-const calendarDays = computed(() => {
-  if (!month.value) return []
-  const start = dayjs(`${month.value}-01`)
-  const daysInMonth = start.daysInMonth()
-  const days = []
-  for (let i = 1; i <= daysInMonth; i++) {
-    const date = start.date(i).format('YYYY-MM-DD')
-    const record = attendance.value.find(a => dayjs(a.date).format('YYYY-MM-DD') === date)
-    days.push({
-      date, day: i,
-      weekday: start.date(i).format('ddd'),
-      status: record?.status || null,
-      advance: record?.advance_amount || 0,
-      remark: record?.remark || null,
-    })
-  }
-  return days
+
+
+const empColumns = [
+  { header: 'Date',    key: 'date',    width: 16 },
+  { header: 'Day',     key: 'weekday', width: 12 },
+  { header: 'Status',  key: 'status',  width: 12, align: 'center' },
+  { header: 'Advance', key: 'advFmt',  width: 14, align: 'right' },
+  { header: 'Remark',  key: 'remark',  width: 24 },
+]
+
+const empExportRows = computed(() =>
+  tableRows.value.map(r => ({
+    ...r,
+    date:   dayjs(r.date).format('DD MMM YYYY'),
+    advFmt: r.advance > 0 ? `₹${r.advance}` : '—',
+    remark: r.remark || '—',
+  }))
+)
+
+const empTotals = computed(() => ({
+  date:    `Summary`,
+  weekday: '',
+  status:  `${summary.value?.presentDays}P / ${summary.value?.absentDays}A`,
+  advFmt:  summary.value ? `₹${summary.value.advance.toFixed(2)}` : '',
+  remark:  summary.value ? `Net: ₹${summary.value.net.toFixed(2)}` : '',
+}))
+
+const onDownloadPDF = () => downloadPDF({
+  filename:  `${employee.value?.name}-${month.value}`,
+  title:     `Attendance Report — ${employee.value?.name}`,
+  subtitle:  `${monthLabel.value} · Present: ${summary.value?.presentDays} · Absent: ${summary.value?.absentDays} · Net: ₹${summary.value?.net.toFixed(2)}`,
+  columns:   empColumns,
+  rows:      empExportRows.value,
+  totalsRow: empTotals.value,
 })
 
-const attendanceRate = computed(() => {
-  if (!summary.value || !attendance.value.length) return 0
-  return Math.round((summary.value.presentDays / attendance.value.length) * 100)
-})
-
-const monthLabel = computed(() => dayjs(`${month.value}-01`).format('MMMM YYYY'))
-const getInitials = (name: string) => name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || '??'
-const rateColor = computed(() => {
-  if (attendanceRate.value >= 80) return '#4CAF50'
-  if (attendanceRate.value >= 50) return '#FF9800'
-  return '#F44336'
+const onDownloadExcel = () => downloadExcel({
+  filename:  `${employee.value?.name}-${month.value}`,
+  title:     `Attendance Report — ${employee.value?.name}`,
+  subtitle:  `${monthLabel.value} · Present: ${summary.value?.presentDays} · Absent: ${summary.value?.absentDays} · Net: ₹${summary.value?.net.toFixed(2)}`,
+  columns:   empColumns,
+  rows:      empExportRows.value,
+  totalsRow: empTotals.value,
 })
 </script>
 
@@ -234,7 +234,7 @@ const rateColor = computed(() => {
             </div>
             <div class="d-flex justify-space-between mt-2">
               <span class="text-caption text-disabled">0%</span>
-              <span class="text-caption text-medium-emphasis">{{ attendance.length }} days recorded</span>
+              <span class="text-caption text-medium-emphasis">{{ tableRows.length }} days recorded</span>
               <span class="text-caption text-disabled">100%</span>
             </div>
           </v-card-text>
@@ -354,12 +354,17 @@ const rateColor = computed(() => {
         <v-card rounded="xl" elevation="1" class="mx-4 mb-6">
           <div class="table-topbar px-4 py-3">
             <span class="text-body-2 font-weight-medium">All Entries</span>
-            <v-chip size="x-small" color="primary" variant="tonal">{{ attendance.length }} records</v-chip>
+           <DownloadButtons
+  :downloading="downloading"
+  :disabled="loading || tableRows.length === 0"
+  @pdf="onDownloadPDF"
+  @excel="onDownloadExcel"
+/>
           </div>
           <v-divider />
           <v-data-table
             :headers="headers"
-            :items="attendance"
+            :items="tableRows"
             :loading="loading"
             item-key="id"
             class="md-table"
@@ -382,7 +387,7 @@ const rateColor = computed(() => {
               </v-chip>
             </template>
             <template #item.advance_amount="{ item }">
-              <span v-if="item.advance_amount" class="text-error font-weight-medium">− ₹{{ item.advance_amount }}</span>
+              <span v-if="item.advance > 0" class="text-error font-weight-medium">− ₹{{ item.advance }}</span>
               <span v-else class="text-caption text-disabled">—</span>
             </template>
             <template #item.remark="{ item }">
