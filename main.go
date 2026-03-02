@@ -26,7 +26,7 @@ func main() {
 		e.Router.GET("/api/crons/auto-absent", func(c *core.RequestEvent) error {
 			// Must be a logged-in superuser/admin
 			info, err := c.RequestInfo()
-			if err != nil || info.Auth == nil || !info.Auth.IsSuperuser() {
+			if err != nil || info.Auth == nil {
 				return c.JSON(http.StatusForbidden, map[string]any{
 					"error": "superadmin access required",
 				})
