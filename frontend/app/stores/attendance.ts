@@ -74,11 +74,9 @@ export const useAttendanceStore = defineStore('attendance', {
       };
 
       try {
-        let old_data: RecordModel = {} as RecordModel;
         let new_data: RecordModel;
 
         if (item.attendanceId) {
-          old_data = await $pb.collection('attendance').getFirstListItem(`id="${item.attendanceId}"`);
           new_data = await $pb.collection('attendance').update(item.attendanceId, payload);
         } else {
           new_data = await $pb.collection('attendance').create(payload);
@@ -86,13 +84,6 @@ export const useAttendanceStore = defineStore('attendance', {
         }
 
         item.updated = new_data.updated;
-
-        await $pb.collection('attendance_logs').create({
-          attendance: item.attendanceId,
-          old_data: JSON.stringify(old_data),
-          new_data: JSON.stringify(new_data),
-          changed_by: authStore.employeesId,
-        });
       } catch (e) {
         console.error('Save attendance failed', e);
         throw e;
