@@ -4,6 +4,7 @@
   </NuxtLayout>
 </template>
 
+
 <script setup lang="ts">
 // Global middleware
 onMounted(() => {
