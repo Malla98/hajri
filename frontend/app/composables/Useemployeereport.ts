@@ -93,11 +93,11 @@ export function useEmployeeReport() {
     try {
       employee.value = await $pb.collection('employees').getOne(id)
 
-      const start = `${month.value}-01`
-      const end   = dayjs(start).endOf('month').format('YYYY-MM-DD')
+      const start = dayjs(`${month.value}-01`).format('YYYY-MM-DD')
+      const end   = dayjs(`${month.value}-01`).add(1, 'month').format('YYYY-MM-DD')
 
       rawAttendance.value = await $pb.collection('attendance').getFullList({
-        filter: `employee="${id}" && date >= "${start}" && date <= "${end}"`,
+        filter: `employee="${id}" && date >= "${start}" && date < "${end}"`,
         sort:   'date',
       })
     } finally {
